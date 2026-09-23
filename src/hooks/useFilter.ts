@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
 export type SortOrder = 'asc' | 'desc' | 'none';
 
@@ -20,10 +20,9 @@ export const useFilter = <T extends { title?: string; tags?: string[] }>(
   const [searchTerm, setSearchTerm] = useState<string>(initialSearch);
   const [activeFilters, setActiveFilters] = useState<string[]>(initialFilters);
   const [sortOrder, setSortOrder] = useState<SortOrder>(initialSort);
-  const [data, setData] = useState<T[]>(rawData);
 
-  // Apply search, tag filters, and sort whenever any of them change
-  useEffect(() => {
+  // Derive search, tag filters, and sort whenever any of them change
+  const data = useMemo(() => {
     let filteredData = [...rawData];
 
     // Apply search filter if exists
@@ -60,15 +59,15 @@ export const useFilter = <T extends { title?: string; tags?: string[] }>(
     // Explicit alphabetical sort overrides relevance sort
     if (sortOrder !== 'none') {
       filteredData.sort((a, b) => {
-        const aTitle = (a.title || '').toLowerCase();
-        const bTitle = (b.title || '').toLowerCase();
+        const aTitle = a.title || '';
+        const bTitle = b.title || '';
         return sortOrder === 'asc'
-          ? aTitle.localeCompare(bTitle)
-          : bTitle.localeCompare(aTitle);
+          ? aTitle.localeCompare(bTitle, undefined, { numeric: true, sensitivity: 'base' })
+          : bTitle.localeCompare(aTitle, undefined, { numeric: true, sensitivity: 'base' });
       });
     }
 
-    setData(filteredData);
+    return filteredData;
   }, [searchTerm, activeFilters, sortOrder, rawData]);
 
   return {
